@@ -1,0 +1,8 @@
+AMD HIPIFY Migration Guidelines:
+- To migrate CUDA to HIP, developers must replace NVIDIA-specific syntax with HIP equivalents.
+- Replace `__global__` with `__global__`. (This remains the same).
+- Replace `cudaMallocManaged` with `hipMallocManaged`.
+- Replace `cudaDeviceSynchronize` with `hipDeviceSynchronize`.
+- Replace `cudaFree` with `hipFree`.
+- Kernel launch syntax `<<<blocks, threads>>>` remains identical in HIP.
+- Always include `<hip/hip_runtime.h>` at the top of the file when using HIP API calls.
