@@ -1,28 +1,41 @@
 import os
+import argparse
 from dotenv import load_dotenv
 from crewai import Agent, Task, Crew, Process, LLM
 
 # Load environment variables
 load_dotenv()
 
-# 1. NEW LLM INITIALIZATION
-# CrewAI now uses its own LLM wrapper to connect to Groq
-llm = LLM(
-    model="groq/llama-3.3-70b-versatile",
-    temperature=0,
-    api_key=os.environ.get("GROQ_API_KEY")
-)
+# ==========================================
+# 1. ARGUMENT PARSER
+# ==========================================
+parser = argparse.ArgumentParser(description='HIP-Hop: CUDA to ROCm Migration Swarm')
+parser.add_argument('input_file', type=str, help='Path to the legacy CUDA (.cu) file you want to migrate.')
+args = parser.parse_args()
 
-# 2. FILE NAME UPDATE
-# Read our dummy files (updated to match your new file name)
-with open('legacy_math.cu', 'r') as file:
-    cuda_code = file.read()
+# ==========================================
+# 2. READ FILES
+# ==========================================
+try:
+    with open(args.input_file, 'r') as file:
+        cuda_code = file.read()
+except FileNotFoundError:
+    print(f"Error: The file '{args.input_file}' was not found. Please check the path.")
+    exit()
 
 with open('amd_hip_hop_docs.txt', 'r') as file:
     hip_docs = file.read()
 
 # ==========================================
-# 3. DEFINE THE AGENTS
+# 3. INITIALIZE LLM (AMD ROCm OLLAMA)
+# ==========================================
+llm = LLM(
+    model="ollama/llama3.2",
+    base_url="http://localhost:11434"
+)
+
+# ==========================================
+# 4. DEFINE AGENTS
 # ==========================================
 analyzer = Agent(
     role='Senior CUDA Architect',
@@ -49,7 +62,7 @@ reviewer = Agent(
 )
 
 # ==========================================
-# 4. DEFINE THE TASKS
+# 5. DEFINE TASKS
 # ==========================================
 analyze_task = Task(
     description=f'Read the following CUDA code and list all NVIDIA-specific functions that require translation.\n\nCode:\n{cuda_code}',
@@ -71,7 +84,7 @@ review_task = Task(
 )
 
 # ==========================================
-# 5. KICKOFF THE SWARM
+# 6. KICKOFF SWARM
 # ==========================================
 migration_crew = Crew(
     agents=[analyzer, translator, reviewer],
@@ -79,6 +92,6 @@ migration_crew = Crew(
     process=Process.sequential 
 )
 
-print("Starting the HIP-Hop Migration Swarm...\n")
+print(f"Starting the HIP-Hop Migration Swarm for file: {args.input_file}...\n")
 result = migration_crew.kickoff()
 print("\nMigration Complete! Check the Migration_Report.md file.")
